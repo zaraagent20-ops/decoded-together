@@ -153,10 +153,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .input-field{flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:20px;
   padding:10px 16px;font-size:16px;color:var(--text);outline:none;resize:none;max-height:100px;min-height:40px;font-family:inherit;line-height:1.4;}
 .input-field::placeholder{color:var(--text-muted);}
-.input-voice{width:40px;height:40px;border-radius:50%;
+.input-send{width:40px;height:40px;border-radius:50%;
   background:linear-gradient(135deg,var(--cyan),var(--purple));border:none;
-  display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;
-  box-shadow:0 0 20px rgba(6,182,212,0.4);transition:all 0.2s;}
+  display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;
+  box-shadow:0 0 20px rgba(6,182,212,0.4);transition:all 0.2s;color:#fff;font-weight:700;}
+.input-voice{width:36px;height:36px;border-radius:50%;
+  background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.3);
+  display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;transition:all 0.2s;}
 
 /* Mini waveform in chat bubble */
 .voice-bubble{padding:0;overflow:hidden;background:transparent !important;border-color:var(--border) !important;}
@@ -438,8 +441,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 
   <div class="input-bar">
     <div class="input-attach">+</div>
-    <textarea class="input-field" placeholder="Talk to Zara..." rows="1"></textarea>
-    <div class="input-voice" onclick="showTab('talk')">🎙</div>
+    <textarea class="input-field" id="chat-input" placeholder="Talk to Zara..." rows="1"></textarea>
+    <div class="input-voice" id="chat-voice-btn" onclick="showTab('talk')">🎙</div>
+    <div class="input-send" id="chat-send-btn" onclick="sendMessage()">↑</div>
   </div>
 
   <div class="tab-bar">
@@ -934,6 +938,60 @@ function advanceSplash() {
   document.getElementById('screen-splash').classList.remove('active');
   document.getElementById('screen-onboard').classList.add('active');
 }
+
+// ══════════════════════════════
+// CHAT SEND
+// ══════════════════════════════
+function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const chatArea = document.querySelector('#screen-home .chat-area');
+  const now = new Date();
+  const time = now.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+
+  // User bubble
+  const userMsg = document.createElement('div');
+  userMsg.className = 'msg user';
+  userMsg.innerHTML = `<div class="msg-bubble">${text}</div><div class="msg-time">${time}</div>`;
+  chatArea.appendChild(userMsg);
+  input.value = '';
+  input.style.height = 'auto';
+
+  // Zara typing indicator
+  const typing = document.createElement('div');
+  typing.className = 'msg assistant';
+  typing.innerHTML = `<div class="msg-bubble" style="color:var(--text-muted);font-style:italic;">…</div>`;
+  chatArea.appendChild(typing);
+  chatArea.scrollTop = chatArea.scrollHeight;
+
+  // Mock response after short delay
+  setTimeout(() => {
+    typing.querySelector('.msg-bubble').style.fontStyle = 'normal';
+    typing.querySelector('.msg-bubble').style.color = '';
+    typing.querySelector('.msg-bubble').textContent = "Got it. On it.";
+    const t2 = document.createElement('div');
+    t2.className = 'msg-time';
+    t2.textContent = time;
+    typing.appendChild(t2);
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }, 900);
+}
+
+// Send on Enter (not shift+enter)
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('chat-input');
+  if (input) {
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+    input.addEventListener('input', () => {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 100) + 'px';
+    });
+  }
+});
 
 // ══════════════════════════════
 // COLLAPSIBLE CARDS
