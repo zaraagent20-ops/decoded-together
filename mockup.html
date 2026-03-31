@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Zara — Command Center</title>
+<style>
+:root {
+  --bg: #03060f;
+  --bg2: #070d1c;
+  --cyan: #06b6d4;
+  --cyan2: #22d3ee;
+  --purple: #a855f7;
+  --purple2: #c084fc;
+  --gold: #f59e0b;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --text-muted: #475569;
+  --border: rgba(6,182,212,0.1);
+  --glass: rgba(6,182,212,0.04);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,'SF Pro Display',system-ui,sans-serif;}
+
+/* ── SCREENS ── */
+.screen{display:none;position:absolute;inset:0;flex-direction:column;overflow:hidden;}
+.screen.active{display:flex;}
+
+/* ── AMBIENT BACKGROUND ── */
+.bg-grid{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(6,182,212,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(6,182,212,0.025) 1px,transparent 1px);
+  background-size:44px 44px;}
+.bg-glow{position:fixed;pointer-events:none;z-index:0;border-radius:50%;}
+.bg-glow-1{width:500px;height:500px;top:-150px;right:-150px;
+  background:radial-gradient(circle,rgba(168,85,247,0.07) 0%,transparent 70%);}
+.bg-glow-2{width:400px;height:400px;bottom:-100px;left:-100px;
+  background:radial-gradient(circle,rgba(6,182,212,0.06) 0%,transparent 70%);}
+
+/* ══════════════════════════════
+   SPLASH / LOAD SCREEN
+══════════════════════════════ */
+#screen-splash{background:#000;align-items:center;justify-content:center;z-index:999;}
+#splash-bg-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.75;}
+#splash-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.85;display:none;}
+.splash-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.2) 0%,rgba(3,6,15,0.7) 85%,#03060f 100%);}
+.splash-content{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;padding-bottom:80px;}
+.splash-name{font-size:64px;font-weight:900;letter-spacing:16px;
+  background:linear-gradient(135deg,#fff 0%,var(--cyan) 50%,var(--purple) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 40px rgba(6,182,212,0.6));}
+.splash-line{width:80px;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);margin:14px auto;}
+.splash-sub{font-size:11px;letter-spacing:5px;color:rgba(255,255,255,0.4);text-transform:uppercase;}
+.splash-loading{display:flex;gap:6px;margin-top:32px;}
+.splash-dot{width:5px;height:5px;border-radius:50%;background:var(--cyan);opacity:0.3;animation:splash-pulse 1.4s ease-in-out infinite;}
+.splash-dot:nth-child(2){animation-delay:.2s;background:var(--purple);}
+.splash-dot:nth-child(3){animation-delay:.4s;}
+@keyframes splash-pulse{0%,100%{opacity:0.3;transform:scale(1)}50%{opacity:1;transform:scale(1.4)}}
+
+/* ══════════════════════════════
+   ONBOARDING
+══════════════════════════════ */
+#screen-onboard{align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at top,#0d1229 0%,#03060f 60%);}
+.onboard-logo{text-align:center;margin-bottom:52px;position:relative;z-index:1;}
+.onboard-zara-img{width:90px;height:90px;border-radius:50%;object-fit:cover;object-position:top;
+  border:2px solid rgba(6,182,212,0.5);box-shadow:0 0 40px rgba(6,182,212,0.3),0 0 80px rgba(168,85,247,0.15);
+  margin:0 auto 20px;display:block;}
+.onboard-name-text{font-size:42px;font-weight:900;letter-spacing:10px;
+  background:linear-gradient(135deg,var(--cyan),var(--purple));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 20px rgba(6,182,212,0.4));}
+.onboard-line{width:50px;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);margin:14px auto;}
+.onboard-sub{font-size:10px;letter-spacing:4px;color:var(--text-muted);text-transform:uppercase;}
+.onboard-q{font-size:15px;letter-spacing:2px;color:var(--text-dim);margin-bottom:32px;z-index:1;position:relative;}
+.onboard-cards{display:flex;gap:14px;z-index:1;position:relative;}
+.onboard-card{width:148px;padding:24px 16px;
+  background:rgba(255,255,255,0.025);border-radius:22px;
+  text-align:center;cursor:pointer;transition:all 0.3s;
+  backdrop-filter:blur(20px);}
+.onboard-card.russ{border:1px solid rgba(6,182,212,0.25);}
+.onboard-card.russ:active{background:rgba(6,182,212,0.08);box-shadow:0 0 40px rgba(6,182,212,0.2);}
+.onboard-card.angie{border:1px solid rgba(168,85,247,0.25);}
+.onboard-card.angie:active{background:rgba(168,85,247,0.08);box-shadow:0 0 40px rgba(168,85,247,0.2);}
+.onboard-av{width:68px;height:68px;border-radius:50%;margin:0 auto 14px;
+  display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;}
+.onboard-card.russ .onboard-av{background:linear-gradient(135deg,rgba(6,182,212,0.15),rgba(6,182,212,0.04));border:1.5px solid rgba(6,182,212,0.35);color:var(--cyan);}
+.onboard-card.angie .onboard-av{background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(168,85,247,0.04));border:1.5px solid rgba(168,85,247,0.35);color:var(--purple);}
+.onboard-uname{font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;}
+.onboard-card.russ .onboard-uname{color:var(--cyan);}
+.onboard-card.angie .onboard-uname{color:var(--purple);}
+.onboard-role{font-size:10px;color:var(--text-muted);margin-top:4px;}
+.onboard-note{position:absolute;bottom:44px;font-size:11px;color:var(--text-muted);text-align:center;letter-spacing:1px;z-index:1;}
+
+/* ══════════════════════════════
+   SHARED NAV
+══════════════════════════════ */
+.tab-bar{display:flex;align-items:center;justify-content:space-around;
+  height:62px;padding-bottom:6px;
+  background:rgba(5,10,22,0.97);border-top:1px solid var(--border);
+  backdrop-filter:blur(30px);position:relative;z-index:100;flex-shrink:0;}
+.tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;
+  flex:1;cursor:pointer;padding:8px 0;position:relative;}
+.tab-icon{font-size:19px;line-height:1;transition:all 0.3s;}
+.tab-label{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);transition:all 0.3s;}
+.tab-item.active .tab-label{color:var(--cyan);}
+.tab-item.active .tab-icon{filter:drop-shadow(0 0 8px var(--cyan));}
+.tab-glow{position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+  width:20px;height:2px;border-radius:2px;background:var(--cyan);opacity:0;
+  box-shadow:0 0 8px var(--cyan);transition:all 0.3s;}
+.tab-item.active .tab-glow{opacity:1;}
+
+/* ══════════════════════════════
+   HEADER
+══════════════════════════════ */
+.app-header{display:flex;align-items:center;gap:10px;padding:12px 16px 10px;
+  background:rgba(5,10,22,0.95);border-bottom:1px solid var(--border);
+  backdrop-filter:blur(30px);flex-shrink:0;z-index:10;position:relative;}
+.header-avatar{width:36px;height:36px;border-radius:50%;
+  border:1.5px solid var(--cyan);overflow:hidden;flex-shrink:0;
+  box-shadow:0 0 14px rgba(6,182,212,0.35);}
+.header-avatar img{width:100%;height:100%;object-fit:cover;object-position:top;}
+.header-av-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,rgba(6,182,212,0.2),rgba(168,85,247,0.1));font-size:14px;}
+.header-info{flex:1;}
+.header-name{font-size:16px;font-weight:700;letter-spacing:3px;color:var(--cyan);line-height:1;}
+.header-status{display:flex;align-items:center;gap:5px;margin-top:3px;}
+.status-dot{width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 6px #10b981;flex-shrink:0;}
+.status-text{font-size:12px;color:var(--text-muted);letter-spacing:1px;}
+.hbtn{width:32px;height:32px;border-radius:8px;background:var(--glass);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;transition:all 0.2s;}
+
+/* ══════════════════════════════
+   HOME / CHAT
+══════════════════════════════ */
+#screen-home{background:var(--bg);}
+.chat-area{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;position:relative;z-index:1;}
+.chat-area::-webkit-scrollbar{width:2px;}
+.chat-area::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.msg{display:flex;flex-direction:column;max-width:84%;}
+.msg.user{align-self:flex-end;align-items:flex-end;}
+.msg.assistant{align-self:flex-start;align-items:flex-start;}
+.msg-bubble{padding:12px 16px;border-radius:18px;font-size:16px;line-height:1.55;position:relative;}
+.msg.user .msg-bubble{background:linear-gradient(135deg,rgba(6,182,212,0.18),rgba(6,182,212,0.08));
+  border:1px solid rgba(6,182,212,0.22);border-bottom-right-radius:4px;color:var(--text);}
+.msg.assistant .msg-bubble{background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.07);
+  border-bottom-left-radius:4px;backdrop-filter:blur(10px);color:var(--text);}
+.msg-time{font-size:10px;color:var(--text-muted);margin-top:4px;padding:0 4px;}
+.input-bar{display:flex;align-items:flex-end;gap:8px;padding:10px 12px 14px;
+  background:rgba(5,10,22,0.97);border-top:1px solid var(--border);
+  backdrop-filter:blur(30px);flex-shrink:0;z-index:10;}
+.input-attach{width:40px;height:40px;border-radius:50%;background:var(--glass);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;color:var(--text-dim);}
+.input-field{flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:20px;
+  padding:10px 16px;font-size:16px;color:var(--text);outline:none;resize:none;max-height:100px;min-height:40px;font-family:inherit;line-height:1.4;}
+.input-field::placeholder{color:var(--text-muted);}
+.input-voice{width:40px;height:40px;border-radius:50%;
+  background:linear-gradient(135deg,var(--cyan),var(--purple));border:none;
+  display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;
+  box-shadow:0 0 20px rgba(6,182,212,0.4);transition:all 0.2s;}
+
+/* Mini waveform in chat bubble */
+.voice-bubble{padding:0;overflow:hidden;background:transparent !important;border-color:var(--border) !important;}
+.voice-bubble-top{padding:10px 14px;display:flex;align-items:center;gap:8px;
+  background:rgba(168,85,247,0.08);border-bottom:1px solid rgba(168,85,247,0.1);}
+.voice-bubble-wave{padding:12px 14px;}
+
+/* ══════════════════════════════
+   TALK / VOICE — THE HERO SCREEN
+══════════════════════════════ */
+#screen-talk{
+  background:radial-gradient(ellipse at 50% 40%,#0d0520 0%,#06030f 50%,#03060f 100%);
+  align-items:center;justify-content:space-between;overflow:hidden;}
+
+/* Zara full body — full screen ghost behind loops */
+.voice-zara-bg{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  object-position:center 15%;
+  opacity:0.18;
+  mask-image:linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.5) 5%, rgba(0,0,0,0.9) 20%, rgba(0,0,0,0.9) 80%, transparent 100%);
+  -webkit-mask-image:linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.5) 5%, rgba(0,0,0,0.9) 20%, rgba(0,0,0,0.9) 80%, transparent 100%);
+  pointer-events:none;
+  filter:saturate(0.3) brightness(0.9);}
+
+/* Ambient glow behind orb area */
+.voice-ambient{position:absolute;width:320px;height:320px;border-radius:50%;top:50%;left:50%;
+  transform:translate(-50%,-58%);pointer-events:none;
+  background:radial-gradient(circle,rgba(168,85,247,0.12) 0%,rgba(6,182,212,0.06) 40%,transparent 70%);
+  animation:ambient-breathe 4s ease-in-out infinite;}
+@keyframes ambient-breathe{0%,100%{opacity:0.6;transform:translate(-50%,-58%) scale(1)}50%{opacity:1;transform:translate(-50%,-58%) scale(1.1)}}
+
+.voice-top{width:100%;display:flex;align-items:center;justify-content:center;
+  padding:24px 20px 0;position:relative;flex-shrink:0;z-index:10;}
+.voice-mode-label{font-size:10px;letter-spacing:5px;color:var(--text-muted);text-transform:uppercase;}
+.voice-x{position:absolute;right:20px;top:24px;width:30px;height:30px;border-radius:50%;
+  background:rgba(255,255,255,0.05);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;color:var(--text-dim);}
+
+/* CANVAS AREA — centered hero */
+.voice-canvas-wrap{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;position:relative;z-index:5;gap:0;}
+
+/* Zara face portrait — prominent, in the center zone */
+.voice-portrait-ring{
+  position:absolute;
+  width:130px;height:130px;border-radius:50%;
+  border:1.5px solid rgba(6,182,212,0.25);
+  box-shadow:0 0 30px rgba(6,182,212,0.15),0 0 60px rgba(168,85,247,0.1),inset 0 0 30px rgba(0,0,0,0.5);
+  overflow:hidden;z-index:6;
+  background:linear-gradient(135deg,rgba(6,182,212,0.1),rgba(168,85,247,0.1));}
+.voice-portrait-ring img{width:100%;height:100%;object-fit:cover;object-position:top center;opacity:0.9;}
+.voice-portrait-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  font-size:48px;background:linear-gradient(135deg,rgba(6,182,212,0.2),rgba(168,85,247,0.2));}
+
+#circles-canvas{display:block;position:absolute;z-index:5;}
+
+.voice-info{display:flex;flex-direction:column;align-items:center;gap:6px;z-index:10;margin-top:8px;}
+.voice-status-text{font-size:15px;font-weight:300;letter-spacing:4px;text-transform:uppercase;
+  color:var(--cyan);text-shadow:0 0 20px rgba(6,182,212,0.6);
+  animation:status-breathe 2s ease-in-out infinite;}
+@keyframes status-breathe{0%,100%{opacity:0.7}50%{opacity:1}}
+.voice-transcript{max-width:280px;text-align:center;font-size:15px;color:var(--text-dim);
+  line-height:1.6;min-height:40px;padding:0 24px;}
+
+/* Controls */
+.voice-controls{display:flex;align-items:center;gap:28px;padding:0 0 36px;z-index:10;flex-shrink:0;}
+.v-btn-end{width:58px;height:58px;border-radius:50%;
+  background:rgba(239,68,68,0.1);border:1.5px solid rgba(239,68,68,0.35);
+  display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;
+  box-shadow:0 0 16px rgba(239,68,68,0.15);color:#ef4444;transition:all 0.2s;}
+.v-btn-mic{width:76px;height:76px;border-radius:50%;
+  background:linear-gradient(135deg,var(--cyan),var(--purple));border:none;
+  display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;
+  box-shadow:0 0 40px rgba(6,182,212,0.45),0 0 80px rgba(168,85,247,0.15);
+  transition:all 0.2s;position:relative;}
+.v-btn-mic::after{content:'';position:absolute;inset:-4px;border-radius:50%;
+  border:1px solid rgba(6,182,212,0.25);animation:mic-ring 2s ease-in-out infinite;}
+@keyframes mic-ring{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(1.08);opacity:1}}
+.v-btn-mute{width:46px;height:46px;border-radius:50%;
+  background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:var(--text-dim);}
+
+/* ══════════════════════════════
+   SPACE
+══════════════════════════════ */
+#screen-space{background:var(--bg);}
+.space-subtabs{display:flex;border-bottom:1px solid var(--border);background:rgba(5,10,22,0.9);flex-shrink:0;}
+.subtab{flex:1;padding:12px;text-align:center;font-size:10px;letter-spacing:2px;text-transform:uppercase;
+  color:var(--text-muted);cursor:pointer;transition:all 0.2s;border-bottom:2px solid transparent;}
+.subtab.active{color:var(--cyan);border-bottom-color:var(--cyan);}
+.space-content{flex:1;overflow-y:auto;}
+.slack-channels{padding:8px;display:flex;flex-direction:column;gap:3px;}
+.ch-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);padding:14px 12px 6px;}
+.ch-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;cursor:pointer;transition:all 0.2s;border:1px solid transparent;}
+.ch-item:active{background:var(--glass);border-color:var(--border);}
+.ch-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.ch-info{flex:1;min-width:0;}
+.ch-name{font-size:16px;font-weight:500;color:var(--text);}
+.ch-preview{font-size:13px;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ch-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
+.ch-time{font-size:10px;color:var(--text-muted);}
+.ch-badge{background:var(--cyan);color:#000;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;box-shadow:0 0 8px rgba(6,182,212,0.4);}
+.ch-warn{background:rgba(245,158,11,0.15);color:var(--gold);border:1px solid rgba(245,158,11,0.3);font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;}
+.keep-grid{padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.note-card{padding:16px;border-radius:14px;cursor:pointer;min-height:100px;display:flex;flex-direction:column;gap:6px;transition:all 0.2s;border:1px solid rgba(255,255,255,0.05);}
+.note-card:active{transform:scale(0.97);}
+.note-title{font-size:15px;font-weight:600;line-height:1.3;}
+.note-preview{font-size:13px;line-height:1.5;opacity:0.55;flex:1;overflow:hidden;}
+.note-date{font-size:10px;opacity:0.35;}
+.keep-fab{position:absolute;bottom:72px;right:20px;width:50px;height:50px;border-radius:50%;
+  background:linear-gradient(135deg,var(--cyan),var(--purple));display:flex;align-items:center;justify-content:center;
+  font-size:22px;cursor:pointer;box-shadow:0 0 20px rgba(6,182,212,0.4);z-index:50;}
+
+/* ══════════════════════════════
+   WORK
+══════════════════════════════ */
+#screen-work{background:var(--bg);}
+.work-scroll{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;}
+.w-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);padding:4px 4px 2px;}
+.agent-card{background:rgba(255,255,255,0.025);border:1px solid var(--border);border-radius:16px;padding:16px;backdrop-filter:blur(10px);}
+.agent-hd{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.agent-ico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.agent-title{font-size:16px;font-weight:600;color:var(--text);flex:1;}
+.a-status{font-size:10px;padding:3px 10px;border-radius:20px;font-weight:600;letter-spacing:1px;text-transform:uppercase;}
+.s-run{background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);box-shadow:0 0 8px rgba(16,185,129,0.15);}
+.s-done{background:rgba(6,182,212,0.08);color:var(--cyan);border:1px solid var(--border);}
+.s-wait{background:rgba(245,158,11,0.08);color:var(--gold);border:1px solid rgba(245,158,11,0.25);}
+.agent-out{background:rgba(0,0,0,0.3);border-radius:8px;padding:10px 12px;font-size:13px;font-family:'SF Mono',monospace;color:var(--text-dim);line-height:1.6;max-height:76px;overflow:hidden;position:relative;}
+.agent-out::after{content:'';position:absolute;bottom:0;left:0;right:0;height:28px;background:linear-gradient(transparent,rgba(0,0,0,0.3));}
+.agent-prog{height:2px;background:rgba(255,255,255,0.05);border-radius:2px;margin-top:10px;overflow:hidden;}
+.agent-prog-bar{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--cyan),var(--purple));box-shadow:0 0 8px rgba(6,182,212,0.3);animation:prog 2.5s ease-in-out infinite;}
+@keyframes prog{0%{width:0%}50%{width:78%}100%{width:95%}}
+.sys-card{background:rgba(255,255,255,0.025);border:1px solid var(--border);border-radius:16px;padding:16px;}
+.sys-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.sys-row:last-child{border-bottom:none;}
+.sys-lbl{font-size:14px;color:var(--text-dim);}
+.sys-val{font-size:14px;font-weight:600;}
+.s-ok{color:#10b981;}.s-warn{color:var(--gold);}
+.remote-btn{display:flex;align-items:center;justify-content:center;gap:10px;padding:16px;border-radius:16px;
+  background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.18);
+  color:var(--gold);font-size:14px;font-weight:600;cursor:pointer;letter-spacing:1px;}
+
+/* Collapsible agent card body */
+.agent-body{overflow:hidden;transition:max-height 0.3s ease;}
+.agent-body.collapsed{max-height:0;}
+.agent-body.expanded{max-height:300px;}
+.agent-hd{cursor:pointer;}
+.collapse-arrow{font-size:10px;color:var(--text-muted);transition:transform 0.2s;margin-left:4px;}
+.agent-hd.open .collapse-arrow{transform:rotate(90deg);}
+
+/* Sys card collapsible */
+.sys-body{overflow:hidden;transition:max-height 0.3s ease;}
+.sys-body.collapsed{max-height:0;}
+.sys-body.expanded{max-height:300px;}
+.sys-hd{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding-bottom:6px;}
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<!-- ═══════════════ SPLASH ═══════════════ -->
+<div class="screen" id="screen-splash" onclick="advanceSplash()">
+  <img id="splash-bg-img" src="/zara-splash.jpg" onerror="this.style.display='none'">
+  <video id="splash-video" muted playsinline loop preload="auto"
+    src="/zara-video.mp4"
+    onerror="this.style.display='none'">
+  </video>
+  <div class="splash-overlay"></div>
+  <div class="splash-content">
+    <div class="splash-name">ZARA</div>
+    <div class="splash-line"></div>
+    <div class="splash-sub">Command Center · v2.0</div>
+    <div class="splash-loading">
+      <div class="splash-dot"></div>
+      <div class="splash-dot"></div>
+      <div class="splash-dot"></div>
+    </div>
+    <div style="margin-top:28px;font-size:11px;letter-spacing:3px;color:rgba(255,255,255,0.25);text-transform:uppercase;">TAP TO ENTER</div>
+  </div>
+</div>
+
+<!-- ═══════════════ ONBOARDING ═══════════════ -->
+<div class="screen active" id="screen-onboard">
+  <div class="onboard-logo">
+    <img src="/zara-avatar.jpg" class="onboard-zara-img" onerror="this.style.display='none'">
+    <div class="onboard-name-text">ZARA</div>
+    <div class="onboard-line"></div>
+    <div class="onboard-sub">Command Center · v2.0</div>
+  </div>
+  <div class="onboard-q">WHO ARE YOU?</div>
+  <div class="onboard-cards">
+    <div class="onboard-card russ" onclick="goHome()">
+      <div class="onboard-av">R</div>
+      <div class="onboard-uname">RUSS</div>
+      <div class="onboard-role">Commander</div>
+    </div>
+    <div class="onboard-card angie" onclick="goHome()">
+      <div class="onboard-av">A</div>
+      <div class="onboard-uname">ANGIE</div>
+      <div class="onboard-role">Co-pilot</div>
+    </div>
+  </div>
+  <div class="onboard-note">Saved to this device. Never asked again.</div>
+</div>
+
+<!-- ═══════════════ HOME / CHAT ═══════════════ -->
+<div class="screen" id="screen-home">
+  <div class="app-header">
+    <div class="header-avatar">
+      <img src="/zara-avatar.jpg" onerror="this.outerHTML='<div class=\'header-avatar\'><div class=\'header-av-fallback\'>⚡</div></div>'">
+    </div>
+    <div class="header-info">
+      <div class="header-name">ZARA</div>
+      <div class="header-status">
+        <div class="status-dot"></div>
+        <div class="status-text">ONLINE · COMMAND CENTER</div>
+      </div>
+    </div>
+    <div class="hbtn">📎</div>
+    <div class="hbtn">⚙</div>
+  </div>
+
+  <div class="chat-area">
+    <div class="msg assistant">
+      <div class="msg-bubble">Russ. Online. What are we doing — and don't say 'not sure', you always know.</div>
+      <div class="msg-time">9:04 AM</div>
+    </div>
+    <div class="msg user">
+      <div class="msg-bubble">give me a rundown on the relocation</div>
+      <div class="msg-time">9:06 AM</div>
+    </div>
+    <div class="msg assistant">
+      <div class="msg-bubble">Costa Rica's winning. Boquete and Medellín still in play. August is 5 months out — visa research hasn't moved since Thursday and that's the only thing that actually matters right now. Doc or do we just talk through it?</div>
+      <div class="msg-time">9:06 AM</div>
+    </div>
+    <div class="msg user">
+      <div class="msg-bubble">pull the doc</div>
+      <div class="msg-time">9:07 AM</div>
+    </div>
+    <div class="msg assistant">
+      <div class="msg-bubble" style="display:flex;align-items:center;gap:10px;background:rgba(6,182,212,0.06);border-color:rgba(6,182,212,0.2);">
+        <span style="font-size:22px;">📄</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--cyan);">Relocation Status — March 2026</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Google Drive · 3 days ago</div>
+        </div>
+      </div>
+      <div class="msg-time">9:07 AM</div>
+    </div>
+    <div class="msg assistant">
+      <div class="msg-bubble" style="border-color:rgba(245,158,11,0.25);background:rgba(245,158,11,0.04);">
+        <div style="font-size:10px;color:var(--gold);letter-spacing:1px;margin-bottom:6px;">⚠ RITUAL REMINDER</div>
+        Wednesday container is tonight. You've skipped two in a row. She hasn't said anything but she noticed. Don't make it three.
+      </div>
+      <div class="msg-time">9:07 AM</div>
+    </div>
+    <div class="msg assistant">
+      <div class="msg-bubble voice-bubble">
+        <div class="voice-bubble-top">
+          <span>🎙</span>
+          <span style="font-size:11px;color:var(--purple);letter-spacing:1px;">VOICE REPLY</span>
+          <span style="margin-left:auto;font-size:11px;color:var(--text-muted);">0:06</span>
+        </div>
+        <div class="voice-bubble-wave">
+          <canvas id="mini-wave" width="230" height="34"></canvas>
+        </div>
+      </div>
+      <div class="msg-time">9:08 AM</div>
+    </div>
+  </div>
+
+  <div class="input-bar">
+    <div class="input-attach">+</div>
+    <textarea class="input-field" placeholder="Talk to Zara..." rows="1"></textarea>
+    <div class="input-voice" onclick="showTab('talk')">🎙</div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab-item active" onclick="showTab('home')"><div class="tab-icon">⚡</div><div class="tab-label">Home</div><div class="tab-glow"></div></div>
+    <div class="tab-item" onclick="showTab('talk')"><div class="tab-icon">🎙</div><div class="tab-label">Talk</div><div class="tab-glow"></div></div>
+    <div class="tab-item" onclick="showTab('space')"><div class="tab-icon">◈</div><div class="tab-label">Space</div><div class="tab-glow"></div></div>
+    <div class="tab-item" onclick="showTab('work')"><div class="tab-icon">⬡</div><div class="tab-label">Work</div><div class="tab-glow"></div></div>
+  </div>
+</div>
+
+<!-- ═══════════════ TALK / VOICE ═══════════════ -->
+<div class="screen" id="screen-talk">
+
+  <img src="/zara-fullbody.jpg" class="voice-zara-bg" onerror="this.style.display='none'">
+  <div class="voice-ambient"></div>
+
+  <div class="voice-top">
+    <div class="voice-mode-label">VOICE MODE</div>
+    <div class="voice-x" onclick="showTab('home')">✕</div>
+  </div>
+
+  <div class="voice-canvas-wrap">
+    <canvas id="circles-canvas"></canvas>
+  </div>
+
+  <div class="voice-info">
+    <div class="voice-status-text" id="v-status">LISTENING</div>
+    <div class="voice-transcript" id="v-transcript">Tap the mic and start talking.</div>
+  </div>
+
+  <div class="voice-controls">
+    <div class="v-btn-end" onclick="showTab('home')">✕</div>
+    <div class="v-btn-mic" id="mic-btn" onclick="toggleMic()">🎙</div>
+    <div class="v-btn-mute" id="tts-test-btn" onclick="testTTS()" title="Hear Zara speak">🔊</div>
+  </div>
+  <div style="text-align:center;font-size:10px;letter-spacing:2px;color:var(--text-muted);padding-bottom:8px;z-index:10;">TAP 🔊 TO HEAR HER VOICE</div>
+
+  <div class="tab-bar">
+    <div class="tab-item" onclick="showTab('home')"><div class="tab-icon">⚡</div><div class="tab-label">Home</div><div class="tab-glow"></div></div>
+    <div class="tab-item active" onclick="showTab('talk')"><div class="tab-icon">🎙</div><div class="tab-label">Talk</div><div class="tab-glow"></div></div>
+    <div class="tab-item" onclick="showTab('space')"><div class="tab-icon">◈</div><div class="tab-label">Space</div><div class="tab-glow"></div></div>
+    <div class="tab-item" onclick="showTab('work')"><div class="tab-icon">⬡</div><div class="tab-label">Work</div><div class="tab-glow"></div></div>
+  </div>
+</div>
+
+<!-- ═══════════════ SPACE ═══════════════ -->
+<div class="screen" id="screen-space">
+  <div class="app-header">
+    <div class="header-avatar" style="border-color:var(--purple);box-shadow:0 0 14px rgba(168,85,247,0.35);">
+      <div class="header-av-fallback">◈</div>
+    </div>
+    <div class="header-info">
+      <div class="header-name" style="color:var(--purple);">SPACE</div>
+      <div class="header-status">
+        <div class="status-dot" style="background:var(--purple);box-shadow:0 0 6px var(--purple);"></div>
+        <div class="status-text">DECODED TOGETHER · SYNCED</div>
+      </div>
+    </div>
+    <div class="hbtn">+</div>
+  </div>
+
+  <div class="space-subtabs">
+    <div class="subtab active" id="st-slack" onclick="showSpace('slack')">⬡ SLACK</div>
+    <div class="subtab" id="st-keep" onclick="showSpace('keep')">📝 KEEP</div>
+  </div>
+
+  <div class="space-content" id="sp-slack">
+    <div class="slack-channels">
+      <div class="ch-label">PINNED</div>
+      <div class="ch-item">
+        <div class="ch-icon" style="background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2);">🧠</div>
+        <div class="ch-info"><div class="ch-name"># audhd-playbook</div><div class="ch-preview">Russ: added morning protocol update</div></div>
+        <div class="ch-meta"><div class="ch-time">9:02am</div><div class="ch-badge">3</div></div>
+      </div>
+      <div class="ch-item">
+        <div class="ch-icon" style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.2);">💜</div>
+        <div class="ch-info"><div class="ch-name"># us — russ-and-angie</div><div class="ch-preview">Zara: Wednesday container reminder sent</div></div>
+        <div class="ch-meta"><div class="ch-time">9:07am</div><div class="ch-badge">1</div></div>
+      </div>
+      <div class="ch-label">PROJECTS</div>
+      <div class="ch-item">
+        <div class="ch-icon" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);">🎙</div>
+        <div class="ch-info"><div class="ch-name"># decoded-together-podcast</div><div class="ch-preview">3 episode ideas queued for review</div></div>
+        <div class="ch-meta"><div class="ch-time">Yesterday</div></div>
+      </div>
+      <div class="ch-item">
+        <div class="ch-icon" style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);">🌎</div>
+        <div class="ch-info"><div class="ch-name"># relocation-may-2026</div><div class="ch-preview">Costa Rica visa research — BLOCKED</div></div>
+        <div class="ch-meta"><div class="ch-time">2d ago</div><div class="ch-warn">!</div></div>
+      </div>
+      <div class="ch-item">
+        <div class="ch-icon" style="background:rgba(6,182,212,0.06);border:1px solid var(--border);">⚡</div>
+        <div class="ch-info"><div class="ch-name"># zara-system-builds</div><div class="ch-preview">App v2 mockup — in review</div></div>
+        <div class="ch-meta"><div class="ch-time">Now</div><div class="ch-badge">!</div></div>
+      </div>
+      <div class="ch-item">
+        <div class="ch-icon" style="background:rgba(255,255,255,0.03);border:1px solid var(--border);">💰</div>
+        <div class="ch-info"><div class="ch-name"># income-and-brand</div><div class="ch-preview">NT/ND handbook — draft outline ready</div></div>
+        <div class="ch-meta"><div class="ch-time">3d ago</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="space-content" id="sp-keep" style="display:none;position:relative;">
+    <div class="keep-grid">
+      <div class="note-card" style="background:rgba(6,182,212,0.05);border-color:rgba(6,182,212,0.12);">
+        <div class="note-title" style="color:var(--cyan);">Morning Protocol</div>
+        <div class="note-preview">Capacity check, today's single focus, breadcrumb to Angie before 10am...</div>
+        <div class="note-date">Today</div>
+      </div>
+      <div class="note-card" style="background:rgba(168,85,247,0.05);border-color:rgba(168,85,247,0.12);">
+        <div class="note-title" style="color:var(--purple);">Intimacy Container</div>
+        <div class="note-preview">Wednesday + Sunday. 20 min. No phones. Start with physical proximity...</div>
+        <div class="note-date">2d ago</div>
+      </div>
+      <div class="note-card" style="background:rgba(245,158,11,0.05);border-color:rgba(245,158,11,0.12);">
+        <div class="note-title" style="color:var(--gold);">Costa Rica Visa</div>
+        <div class="note-preview">Rentista visa — $2,500/mo passive income requirement. Pensionado option...</div>
+        <div class="note-date">3d ago</div>
+      </div>
+      <div class="note-card" style="background:rgba(16,185,129,0.05);border-color:rgba(16,185,129,0.12);">
+        <div class="note-title" style="color:#10b981;">Decoded Together</div>
+        <div class="note-preview">Ep 1: "The day we almost didn't make it". Guest pitch format. Launch...</div>
+        <div class="note-date">Yesterday</div>
+      </div>
+      <div class="note-card"><div class="note-title">RSD Protocol</div><div class="note-preview">1. Name it. 2. Three objective facts. 3. Text Angie one word...</div><div class="note-date">1 week ago</div></div>
+      <div class="note-card"><div class="note-title">Boquete Notes</div><div class="note-preview">3,900ft. Avg 65°F. Strong expat community. Fiber internet confirmed...</div><div class="note-date">4d ago</div></div>
+    </div>
+    <div class="keep-fab">+</div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab-item" onclick="showTab('home')"><div class="tab-icon">⚡</div><div class="tab-label">Home</div><div class="tab-glow"></div></div>
+    <div class="tab-item" onclick="showTab('talk')"><div class="tab-icon">🎙</div><div class="tab-label">Talk</div><div class="tab-glow"></div></div>
+    <div class="tab-item active" onclick="showTab('space')"><div class="tab-icon">◈</div><div class="tab-label">Space</div><div class="tab-glow"></div></div>
+    <div class="tab-item" onclick="showTab('work')"><div class="tab-icon">⬡</div><div class="tab-label">Work</div><div class="tab-glow"></div></div>
+  </div>
+</div>
+
+<!-- ═══════════════ WORK ═══════════════ -->
+<div class="screen" id="screen-work">
+  <div class="app-header">
+    <div class="header-avatar" style="border-color:var(--purple);box-shadow:0 0 14px rgba(168,85,247,0.3);">
+      <div class="header-av-fallback">⬡</div>
+    </div>
+    <div class="header-info">
+      <div class="header-name" style="color:var(--purple);">WORK</div>
+      <div class="header-status">
+        <div class="status-dot" style="background:var(--purple);box-shadow:0 0 6px var(--purple);"></div>
+        <div class="status-text">2 AGENTS RUNNING</div>
+      </div>
+    </div>
+    <div class="hbtn">↻</div>
+  </div>
+
+  <div class="work-scroll">
+    <div class="w-label">RUNNING</div>
+    <div class="agent-card" style="border-color:rgba(16,185,129,0.2);">
+      <div class="agent-hd open" onclick="toggleCard(this)">
+        <div class="agent-ico" style="background:rgba(16,185,129,0.1);">🔄</div>
+        <div class="agent-title">Morning Briefing</div>
+        <div class="a-status s-run">Running</div>
+        <span class="collapse-arrow">›</span>
+      </div>
+      <div class="agent-body expanded">
+        <div class="agent-out" style="margin-top:10px;">Fetching Atlanta weather... ✓<br>Pulling BBC headlines... ✓<br>Scanning Tico Times for CR news...<br>Building your summary...</div>
+        <div class="agent-prog"><div class="agent-prog-bar"></div></div>
+      </div>
+    </div>
+    <div class="agent-card">
+      <div class="agent-hd" onclick="toggleCard(this)">
+        <div class="agent-ico" style="background:rgba(6,182,212,0.08);">🧠</div>
+        <div class="agent-title">ChromaDB Index</div>
+        <div class="a-status s-done">Done</div>
+        <span class="collapse-arrow">›</span>
+      </div>
+      <div class="agent-body collapsed">
+        <div class="agent-out" style="color:#10b981;margin-top:10px;">✓ 292 files · 10,653 chunks indexed<br>All knowledge current.</div>
+      </div>
+    </div>
+    <div class="w-label">QUEUED</div>
+    <div class="agent-card">
+      <div class="agent-hd" onclick="toggleCard(this)">
+        <div class="agent-ico" style="background:rgba(245,158,11,0.08);">📱</div>
+        <div class="agent-title">App Build — v2.0</div>
+        <div class="a-status s-wait">Waiting</div>
+        <span class="collapse-arrow">›</span>
+      </div>
+      <div class="agent-body collapsed">
+        <div style="font-size:13px;color:var(--text-muted);padding-top:10px;">Mockup approved. React Native build queued.</div>
+      </div>
+    </div>
+    <div class="agent-card">
+      <div class="agent-hd" onclick="toggleCard(this)">
+        <div class="agent-ico" style="background:rgba(168,85,247,0.08);">📅</div>
+        <div class="agent-title">Evening Bridge — 6:00 PM</div>
+        <div class="a-status s-wait">Scheduled</div>
+        <span class="collapse-arrow">›</span>
+      </div>
+      <div class="agent-body collapsed">
+        <div style="font-size:13px;color:var(--text-muted);padding-top:10px;">Separate messages → Russ + Angie. Journal analysis runs first.</div>
+      </div>
+    </div>
+    <div class="w-label">SYSTEM</div>
+    <div class="sys-card">
+      <div class="sys-hd" onclick="toggleSys(this)">
+        <div class="sys-lbl" style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);">System Status</div>
+        <span class="collapse-arrow" style="font-size:12px;color:var(--text-muted);">›</span>
+      </div>
+      <div class="sys-body expanded">
+        <div class="sys-row"><div class="sys-lbl">Zara API</div><div class="sys-val s-ok">● ONLINE</div></div>
+        <div class="sys-row"><div class="sys-lbl">Tailscale</div><div class="sys-val s-ok">● CONNECTED</div></div>
+        <div class="sys-row"><div class="sys-lbl">ElevenLabs</div><div class="sys-val s-ok">● READY</div></div>
+        <div class="sys-row"><div class="sys-lbl">Anthropic API</div><div class="sys-val s-warn">⚠ LOW CREDITS</div></div>
+        <div class="sys-row"><div class="sys-lbl">ChromaDB</div><div class="sys-val s-ok">● 10,653 chunks</div></div>
+      </div>
+    </div>
+    <div class="remote-btn">🖥 REMOTE ACCESS<span style="font-size:11px;font-weight:400;opacity:0.5;margin-left:auto;">When I need you</span></div>
+  </div>
+
+  <div class="tab-bar">
+    <div class="tab-item" onclick="showTab('home')"><div class="tab-icon">⚡</div><div class="tab-label">Home</div><div class="tab-glow"></div></div>
+    <div class="tab-item" onclick="showTab('talk')"><div class="tab-icon">🎙</div><div class="tab-label">Talk</div><div class="tab-glow"></div></div>
+    <div class="tab-item" onclick="showTab('space')"><div class="tab-icon">◈</div><div class="tab-label">Space</div><div class="tab-glow"></div></div>
+    <div class="tab-item active" onclick="showTab('work')"><div class="tab-icon">⬡</div><div class="tab-label">Work</div><div class="tab-glow"></div></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════
+// NAVIGATION
+// ══════════════════════════════
+let circlesRAF = null;
+let miniWaveRAF = null;
+let isMicActive = false;
+let voiceAmplitude = 0;
+let voiceTarget = 0;
+
+function showTab(tab) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + tab).classList.add('active');
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('#screen-' + tab + ' .tab-item').forEach(t => {
+    if (t.querySelector('.tab-label') && t.querySelector('.tab-label').textContent.toLowerCase() === tab) {
+      t.classList.add('active');
+    }
+  });
+  // Set correct active tab
+  const tabMap = {home:0, talk:1, space:2, work:3};
+  const idx = tabMap[tab];
+  document.querySelectorAll('#screen-' + tab + ' .tab-item')[idx]?.classList.add('active');
+
+  if (tab === 'talk') { sizeCirclesCanvas(); startCircles(); }
+  else { cancelAnimationFrame(circlesRAF); }
+  if (tab === 'home') startMiniWave();
+}
+
+function goHome() {
+  document.getElementById('screen-onboard').classList.remove('active');
+  showTab('home');
+}
+
+function showSpace(which) {
+  document.getElementById('sp-slack').style.display = which === 'slack' ? 'block' : 'none';
+  document.getElementById('sp-keep').style.display = which === 'keep' ? 'block' : 'none';
+  document.getElementById('st-slack').classList.toggle('active', which === 'slack');
+  document.getElementById('st-keep').classList.toggle('active', which === 'keep');
+}
+
+// ══════════════════════════════
+// SPIROGRAPH LOOP VISUALIZER
+// Overlapping organic loops — each a tilted wobbly ellipse
+// rotating at different speeds, crossing over each other
+// ══════════════════════════════
+function sizeCirclesCanvas() {
+  const canvas = document.getElementById('circles-canvas');
+  const wrap = canvas.parentElement;
+  const W = wrap.clientWidth;
+  const H = wrap.clientHeight;
+  canvas.width = W;
+  canvas.height = H;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+}
+
+function startCircles() {
+  cancelAnimationFrame(circlesRAF);
+
+  const canvas = document.getElementById('circles-canvas');
+  const ctx = canvas.getContext('2d');
+
+  // 6 loops — tilted ellipses at different angles, rotating different speeds
+  // rx/ry ratio ~0.58 gives the flattened ellipse that creates crossing overlap
+  const loops = [
+    { rx: 115, ry: 67, rot: 0,    rotSpd:  0.0040, wobSpd: 0.013, wobAmt: 0.055, color: [6,182,212],   lw: 2.2, ph: 0.0  },
+    { rx: 112, ry: 65, rot: 1.05, rotSpd: -0.0030, wobSpd: 0.017, wobAmt: 0.065, color: [168,85,247],  lw: 1.8, ph: 1.05 },
+    { rx: 118, ry: 69, rot: 2.09, rotSpd:  0.0050, wobSpd: 0.011, wobAmt: 0.048, color: [34,211,238],  lw: 1.2, ph: 2.09 },
+    { rx: 110, ry: 64, rot: 3.14, rotSpd: -0.0045, wobSpd: 0.019, wobAmt: 0.070, color: [192,132,252], lw: 1.6, ph: 3.14 },
+    { rx: 120, ry: 70, rot: 4.19, rotSpd:  0.0035, wobSpd: 0.015, wobAmt: 0.060, color: [6,182,212],   lw: 1.0, ph: 4.19 },
+    { rx: 108, ry: 63, rot: 5.24, rotSpd: -0.0055, wobSpd: 0.021, wobAmt: 0.075, color: [240,100,220], lw: 0.8, ph: 5.24 },
+  ];
+
+  let t = 0;
+
+  function drawLoop(loop, amp) {
+    const W = canvas.width, H = canvas.height;
+    const cx = W/2, cy = H/2;
+    const pts = 240;
+
+    // Expand with voice
+    const expansion = 1 + amp * 0.28;
+    const rx = loop.rx * expansion;
+    const ry = loop.ry * expansion;
+    const currentRot = loop.rot + t * loop.rotSpd;
+
+    ctx.beginPath();
+
+    for (let i = 0; i <= pts; i++) {
+      const angle = (i / pts) * Math.PI * 2;
+
+      // Organic wobble — two overlapping frequencies
+      const wob = loop.wobAmt * (1 + amp * 2.2);
+      const noiseR = Math.sin(angle * 2 + t * loop.wobSpd + loop.ph) * wob
+                   + Math.sin(angle * 3 - t * loop.wobSpd * 0.7 + loop.ph * 1.4) * wob * 0.5
+                   + Math.sin(angle * 5 + t * loop.wobSpd * 0.4 + loop.ph * 0.8) * wob * 0.25;
+
+      // Ellipse with wobble
+      const erx = rx * (1 + noiseR);
+      const ery = ry * (1 + noiseR * 0.6);
+
+      // Raw ellipse point
+      const x0 = erx * Math.cos(angle);
+      const y0 = ery * Math.sin(angle);
+
+      // Rotate ellipse by currentRot
+      const cosR = Math.cos(currentRot);
+      const sinR = Math.sin(currentRot);
+      const x = cx + x0 * cosR - y0 * sinR;
+      const y = cy + x0 * sinR + y0 * cosR;
+
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+
+    ctx.closePath();
+
+    const [r, g, b] = loop.color;
+    const opacity = 0.45 + amp * 0.45 + Math.sin(t * 0.015 + loop.ph) * 0.08;
+    const glow = 8 + amp * 20;
+    const lw = loop.lw * (1 + amp * 0.6);
+
+    ctx.strokeStyle = `rgba(${r},${g},${b},${Math.min(opacity, 0.95)})`;
+    ctx.lineWidth = lw;
+    ctx.shadowColor = `rgba(${r},${g},${b},0.7)`;
+    ctx.shadowBlur = glow;
+    ctx.stroke();
+  }
+
+  function draw() {
+    const W = canvas.width, H = canvas.height;
+    const cx = W/2, cy = H/2;
+
+    ctx.clearRect(0, 0, W, H);
+
+    voiceAmplitude += (voiceTarget - voiceAmplitude) * 0.055;
+    const amp = voiceAmplitude;
+
+    // Central glow — brighter when speaking
+    const glowR = 55 + amp * 40;
+    const glowOpacity = 0.12 + amp * 0.25;
+    const cGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowR);
+    cGrad.addColorStop(0, `rgba(200,150,255,${glowOpacity * 1.5})`);
+    cGrad.addColorStop(0.4, `rgba(6,182,212,${glowOpacity})`);
+    cGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = cGrad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, glowR * 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Draw all loops — reset shadow before each
+    loops.forEach(loop => {
+      ctx.shadowBlur = 0;
+      drawLoop(loop, amp);
+    });
+
+    ctx.shadowBlur = 0;
+    t++;
+    circlesRAF = requestAnimationFrame(draw);
+  }
+
+  draw();
+}
+
+// ══════════════════════════════
+// MIC TOGGLE (mockup demo)
+// ══════════════════════════════
+let micTimer1, micTimer2, micTimer3;
+
+function toggleMic() {
+  isMicActive = !isMicActive;
+  const btn = document.getElementById('mic-btn');
+  const status = document.getElementById('v-status');
+  const transcript = document.getElementById('v-transcript');
+
+  clearTimeout(micTimer1); clearTimeout(micTimer2); clearTimeout(micTimer3);
+
+  if (isMicActive) {
+    voiceTarget = 0.7;
+    btn.style.transform = 'scale(1.1)';
+    btn.style.boxShadow = '0 0 60px rgba(6,182,212,0.9), 0 0 120px rgba(168,85,247,0.4)';
+    btn.textContent = '⏹';
+    status.textContent = 'LISTENING...';
+    status.style.color = '#10b981';
+    transcript.textContent = '';
+
+    micTimer1 = setTimeout(() => {
+      transcript.textContent = '"What\'s going on with the relocation?"';
+      status.textContent = 'PROCESSING...';
+      status.style.color = 'var(--purple)';
+      voiceTarget = 0.3;
+    }, 2200);
+
+    micTimer2 = setTimeout(() => {
+      status.textContent = 'ZARA SPEAKING';
+      status.style.color = 'var(--cyan)';
+      transcript.textContent = "Costa Rica's still winning. Boquete's perfect and you already know it. The only thing standing between you and that move is two hours of visa paperwork you've been avoiding. So. When are we doing it?";
+      voiceTarget = 0.85;
+    }, 3800);
+
+    micTimer3 = setTimeout(() => {
+      isMicActive = false;
+      voiceTarget = 0.1;
+      btn.style.transform = 'scale(1)';
+      btn.style.boxShadow = '0 0 40px rgba(6,182,212,0.45)';
+      btn.textContent = '🎙';
+      status.textContent = 'LISTENING';
+      status.style.color = 'var(--cyan)';
+    }, 7500);
+
+  } else {
+    voiceTarget = 0.05;
+    btn.style.transform = 'scale(1)';
+    btn.style.boxShadow = '0 0 40px rgba(6,182,212,0.45)';
+    btn.textContent = '🎙';
+    status.textContent = 'LISTENING';
+    status.style.color = 'var(--cyan)';
+    transcript.textContent = 'Tap the mic and start talking.';
+  }
+}
+
+// ══════════════════════════════
+// MINI WAVEFORM (chat bubble)
+// ══════════════════════════════
+function startMiniWave() {
+  cancelAnimationFrame(miniWaveRAF);
+  const canvas = document.getElementById('mini-wave');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  let p = 0;
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const waves = [
+      {color:'rgba(6,182,212,0.9)', freq:2.8, amp:0.52, off:0},
+      {color:'rgba(168,85,247,0.55)', freq:4.1, amp:0.32, off:1.2},
+      {color:'rgba(34,211,238,0.35)', freq:1.9, amp:0.22, off:2.4},
+    ];
+    waves.forEach(w => {
+      ctx.beginPath();
+      ctx.strokeStyle = w.color;
+      ctx.lineWidth = 1.5;
+      ctx.shadowColor = w.color;
+      ctx.shadowBlur = 5;
+      for (let x = 0; x <= W; x += 2) {
+        const t2 = (x / W) * Math.PI * 2 * w.freq;
+        const y = H/2 + Math.sin(t2 + p + w.off) * (H/2 * w.amp);
+        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    });
+    p += 0.045;
+    miniWaveRAF = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ══════════════════════════════
+// SPLASH
+// ══════════════════════════════
+function advanceSplash() {
+  document.getElementById('screen-splash').classList.remove('active');
+  document.getElementById('screen-onboard').classList.add('active');
+}
+
+// ══════════════════════════════
+// COLLAPSIBLE CARDS
+// ══════════════════════════════
+function toggleCard(hd) {
+  const body = hd.nextElementSibling;
+  const isOpen = hd.classList.contains('open');
+  hd.classList.toggle('open', !isOpen);
+  body.classList.toggle('expanded', !isOpen);
+  body.classList.toggle('collapsed', isOpen);
+}
+
+function toggleSys(hd) {
+  const body = hd.nextElementSibling;
+  const arrow = hd.querySelector('.collapse-arrow');
+  const isOpen = body.classList.contains('expanded');
+  body.classList.toggle('expanded', !isOpen);
+  body.classList.toggle('collapsed', isOpen);
+  if (arrow) arrow.style.transform = isOpen ? 'rotate(0)' : 'rotate(90deg)';
+}
+
+window.addEventListener('load', () => {
+  startMiniWave();
+  voiceTarget = 0.08;
+});
+
+// ══════════════════════════════
+// REAL TTS — Web Audio API
+// Calls the actual Zara API, plays audio,
+// drives the loop animation from real frequency data
+// ══════════════════════════════
+let audioCtx = null;
+let ttsSource = null;
+
+async function testTTS() {
+  const btn = document.getElementById('tts-test-btn');
+  const status = document.getElementById('v-status');
+  const transcript = document.getElementById('v-transcript');
+
+  // Stop any playing audio
+  if (ttsSource) { try { ttsSource.stop(); } catch(e){} ttsSource = null; }
+
+  btn.textContent = '⏳';
+  status.textContent = 'LOADING...';
+  status.style.color = 'var(--purple)';
+  transcript.textContent = '';
+
+  const testLines = [
+    "Russ. Online. What's the move? And don't give me 'I don't know' — you do know, you always fucking do. Quit stalling and talk to me.",
+    "Visa research hasn't moved in four days. That's not a blocker, that's avoidance with a polite name. Two hours. We kill it tonight or we don't.",
+    "You good, or are you doing that thing where you spiral quietly and call it resting? One word. I can take it.",
+    "I've been watching you orbit this decision for a week. Pick one. We can course-correct later. Motion beats perfect every time.",
+  ];
+  const text = testLines[Math.floor(Math.random() * testLines.length)];
+
+  try {
+    const res = await fetch('/voice/tts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer 9a7162f4-1291-49d1-a510-467de14274e3'
+      },
+      body: JSON.stringify({ text })
+    });
+
+    if (!res.ok) throw new Error(`TTS failed: ${res.status}`);
+
+    const arrayBuffer = await res.arrayBuffer();
+
+    // Web Audio API
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
+
+    const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+
+    const source = audioCtx.createBufferSource();
+    source.buffer = decoded;
+
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.75;
+
+    source.connect(analyser);
+    analyser.connect(audioCtx.destination);
+
+    ttsSource = source;
+    source.start(0);
+
+    btn.textContent = '⏹';
+    status.textContent = 'ZARA SPEAKING';
+    status.style.color = 'var(--cyan)';
+    transcript.textContent = text;
+
+    // Drive animation from real frequency data
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+    let animating = true;
+
+    function driveWave() {
+      if (!animating) return;
+      analyser.getByteFrequencyData(dataArray);
+      // Focus on vocal range (~200-3000Hz) — bins 3–40 at 44100Hz with fftSize 256
+      let sum = 0;
+      for (let i = 3; i < 42; i++) sum += dataArray[i];
+      const avg = sum / 39;
+      voiceTarget = Math.min(avg / 90, 1.0);
+      requestAnimationFrame(driveWave);
+    }
+    driveWave();
+
+    source.onended = () => {
+      animating = false;
+      voiceTarget = 0.05;
+      btn.textContent = '🔊';
+      status.textContent = 'LISTENING';
+      status.style.color = 'var(--cyan)';
+      ttsSource = null;
+    };
+
+    // Stop button
+    btn.onclick = () => {
+      animating = false;
+      try { source.stop(); } catch(e) {}
+      voiceTarget = 0.05;
+      btn.textContent = '🔊';
+      btn.onclick = testTTS;
+      status.textContent = 'LISTENING';
+      status.style.color = 'var(--cyan)';
+    };
+
+  } catch(err) {
+    btn.textContent = '🔊';
+    status.textContent = 'ERROR';
+    status.style.color = '#ef4444';
+    transcript.textContent = err.message;
+    voiceTarget = 0.05;
+    console.error('TTS error:', err);
+  }
+}
+
+window.addEventListener('resize', () => {
+  if (document.getElementById('screen-talk').classList.contains('active')) {
+    sizeCirclesCanvas();
+  }
+});
+</script>
+</body>
+</html>
