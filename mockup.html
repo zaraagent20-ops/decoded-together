@@ -437,7 +437,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
     <div class="tab-item active" onclick="showTab('home')"><div class="tab-icon">⚡</div><div class="tab-label">Home</div><div class="tab-glow"></div></div>
     <div class="tab-item" onclick="showTab('talk')"><div class="tab-icon">🎙</div><div class="tab-label">Talk</div><div class="tab-glow"></div></div>
     <div class="tab-item" onclick="showTab('space')"><div class="tab-icon">◈</div><div class="tab-label">Space</div><div class="tab-glow"></div></div>
-    <div class="tab-item" onclick="showTab('work')"><div class="tab-icon">⬡</div><div class="tab-label">Work</div><div class="tab-glow"></div></div>
+    <div class="tab-item" onclick="showTab('work')"><div class="tab-icon">⬡</div><div class="tab-label">Dashboard</div><div class="tab-glow"></div></div>
   </div>
 </div>
 
@@ -472,7 +472,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
     <div class="tab-item" onclick="showTab('home')"><div class="tab-icon">⚡</div><div class="tab-label">Home</div><div class="tab-glow"></div></div>
     <div class="tab-item active" onclick="showTab('talk')"><div class="tab-icon">🎙</div><div class="tab-label">Talk</div><div class="tab-glow"></div></div>
     <div class="tab-item" onclick="showTab('space')"><div class="tab-icon">◈</div><div class="tab-label">Space</div><div class="tab-glow"></div></div>
-    <div class="tab-item" onclick="showTab('work')"><div class="tab-icon">⬡</div><div class="tab-label">Work</div><div class="tab-glow"></div></div>
+    <div class="tab-item" onclick="showTab('work')"><div class="tab-icon">⬡</div><div class="tab-label">Dashboard</div><div class="tab-glow"></div></div>
   </div>
 </div>
 
@@ -566,7 +566,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
     <div class="tab-item" onclick="showTab('home')"><div class="tab-icon">⚡</div><div class="tab-label">Home</div><div class="tab-glow"></div></div>
     <div class="tab-item" onclick="showTab('talk')"><div class="tab-icon">🎙</div><div class="tab-label">Talk</div><div class="tab-glow"></div></div>
     <div class="tab-item active" onclick="showTab('space')"><div class="tab-icon">◈</div><div class="tab-label">Space</div><div class="tab-glow"></div></div>
-    <div class="tab-item" onclick="showTab('work')"><div class="tab-icon">⬡</div><div class="tab-label">Work</div><div class="tab-glow"></div></div>
+    <div class="tab-item" onclick="showTab('work')"><div class="tab-icon">⬡</div><div class="tab-label">Dashboard</div><div class="tab-glow"></div></div>
   </div>
 </div>
 
@@ -577,7 +577,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
       <div class="header-av-fallback">⬡</div>
     </div>
     <div class="header-info">
-      <div class="header-name" style="color:var(--purple);">WORK</div>
+      <div class="header-name" style="color:var(--purple);">DASHBOARD</div>
       <div class="header-status">
         <div class="status-dot" style="background:var(--purple);box-shadow:0 0 6px var(--purple);"></div>
         <div class="status-text">2 AGENTS RUNNING</div>
@@ -655,7 +655,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
     <div class="tab-item" onclick="showTab('home')"><div class="tab-icon">⚡</div><div class="tab-label">Home</div><div class="tab-glow"></div></div>
     <div class="tab-item" onclick="showTab('talk')"><div class="tab-icon">🎙</div><div class="tab-label">Talk</div><div class="tab-glow"></div></div>
     <div class="tab-item" onclick="showTab('space')"><div class="tab-icon">◈</div><div class="tab-label">Space</div><div class="tab-glow"></div></div>
-    <div class="tab-item active" onclick="showTab('work')"><div class="tab-icon">⬡</div><div class="tab-label">Work</div><div class="tab-glow"></div></div>
+    <div class="tab-item active" onclick="showTab('work')"><div class="tab-icon">⬡</div><div class="tab-label">Dashboard</div><div class="tab-glow"></div></div>
   </div>
 </div>
 
@@ -929,7 +929,10 @@ function advanceSplash() {
 // ══════════════════════════════
 // CHAT SEND
 // ══════════════════════════════
-function sendMessage() {
+const ZARA_TOKEN = '9a7162f4-1291-49d1-a510-467de14274e3';
+const ZARA_PERSON = 'russ';
+
+async function sendMessage() {
   const input = document.getElementById('chat-input');
   const text = input.value.trim();
   if (!text) return;
@@ -945,25 +948,52 @@ function sendMessage() {
   chatArea.appendChild(userMsg);
   input.value = '';
   input.style.height = 'auto';
+  chatArea.scrollTop = chatArea.scrollHeight;
 
-  // Zara typing indicator
+  // Typing indicator
   const typing = document.createElement('div');
   typing.className = 'msg assistant';
-  typing.innerHTML = `<div class="msg-bubble" style="color:var(--text-muted);font-style:italic;">…</div>`;
+  typing.innerHTML = `<div class="msg-bubble" style="color:var(--text-muted);letter-spacing:3px;">···</div>`;
   chatArea.appendChild(typing);
   chatArea.scrollTop = chatArea.scrollHeight;
 
-  // Mock response after short delay
-  setTimeout(() => {
-    typing.querySelector('.msg-bubble').style.fontStyle = 'normal';
-    typing.querySelector('.msg-bubble').style.color = '';
-    typing.querySelector('.msg-bubble').textContent = "Got it. On it.";
-    const t2 = document.createElement('div');
-    t2.className = 'msg-time';
-    t2.textContent = time;
-    typing.appendChild(t2);
+  try {
+    const res = await fetch('/chat/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ZARA_TOKEN}` },
+      body: JSON.stringify({ message: text, person: ZARA_PERSON, session_id: 'app-session', stream: false })
+    });
+    const data = await res.json();
+    const reply = data.reply || 'No response.';
+
+    typing.innerHTML = `<div class="msg-bubble">${reply}</div><div class="msg-time">${time}</div>`;
     chatArea.scrollTop = chatArea.scrollHeight;
-  }, 900);
+
+    // Auto-play TTS on reply
+    speakText(reply);
+  } catch(e) {
+    typing.innerHTML = `<div class="msg-bubble" style="color:var(--text-muted);">Can't reach Zara right now. Check connection.</div><div class="msg-time">${time}</div>`;
+    chatArea.scrollTop = chatArea.scrollHeight;
+  }
+}
+
+async function speakText(text) {
+  try {
+    const res = await fetch('/voice/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ZARA_TOKEN}` },
+      body: JSON.stringify({ text })
+    });
+    if (!res.ok) return;
+    const buf = await res.arrayBuffer();
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const decoded = await audioCtx.decodeAudioData(buf);
+    if (ttsSource) { try { ttsSource.stop(); } catch(e){} }
+    ttsSource = audioCtx.createBufferSource();
+    ttsSource.buffer = decoded;
+    ttsSource.connect(audioCtx.destination);
+    ttsSource.start(0);
+  } catch(e) {}
 }
 
 // Send on Enter (not shift+enter)
