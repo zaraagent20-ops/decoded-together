@@ -950,29 +950,42 @@ async function sendMessage() {
   input.style.height = 'auto';
   chatArea.scrollTop = chatArea.scrollHeight;
 
-  // Typing indicator
+  // Typing indicator with elapsed timer
   const typing = document.createElement('div');
   typing.className = 'msg assistant';
-  typing.innerHTML = `<div class="msg-bubble" style="color:var(--text-muted);letter-spacing:3px;">···</div>`;
+  typing.innerHTML = `<div class="msg-bubble thinking-bubble" style="color:var(--text-muted);font-size:13px;">thinking<span class="think-timer"></span></div>`;
   chatArea.appendChild(typing);
   chatArea.scrollTop = chatArea.scrollHeight;
 
+  // Show elapsed seconds so Russ knows it's working (CLI can be slow)
+  const startTime = Date.now();
+  const timerEl = typing.querySelector('.think-timer');
+  const timerInterval = setInterval(() => {
+    const secs = Math.floor((Date.now() - startTime) / 1000);
+    if (timerEl) timerEl.textContent = ` · ${secs}s`;
+  }, 1000);
+
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 120000);
+
     const res = await fetch('/chat/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${ZARA_TOKEN}` },
-      body: JSON.stringify({ message: text, person: ZARA_PERSON, session_id: 'app-session', stream: false })
+      body: JSON.stringify({ message: text, person: ZARA_PERSON, session_id: 'app-session', stream: false }),
+      signal: controller.signal
     });
+    clearTimeout(timeout);
+    clearInterval(timerInterval);
+
     const data = await res.json();
     const reply = data.reply || 'No response.';
-
     typing.innerHTML = `<div class="msg-bubble">${reply}</div><div class="msg-time">${time}</div>`;
     chatArea.scrollTop = chatArea.scrollHeight;
-
-    // Auto-play TTS on reply
-    speakText(reply);
   } catch(e) {
-    typing.innerHTML = `<div class="msg-bubble" style="color:var(--text-muted);">Can't reach Zara right now. Check connection.</div><div class="msg-time">${time}</div>`;
+    clearInterval(timerInterval);
+    const msg = e.name === 'AbortError' ? 'Timed out. Zara might be on CLI fallback — try again.' : 'No connection. Check that you\'re on the Tailscale URL.';
+    typing.innerHTML = `<div class="msg-bubble" style="color:var(--text-muted);font-size:13px;">${msg}</div><div class="msg-time">${time}</div>`;
     chatArea.scrollTop = chatArea.scrollHeight;
   }
 }
