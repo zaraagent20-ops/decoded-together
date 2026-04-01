@@ -535,31 +535,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
   </div>
 
   <div class="space-content" id="sp-keep" style="display:none;position:relative;">
-    <div class="keep-grid">
-      <div class="note-card" style="background:rgba(6,182,212,0.05);border-color:rgba(6,182,212,0.12);">
-        <div class="note-title" style="color:var(--cyan);">Morning Protocol</div>
-        <div class="note-preview">Capacity check, today's single focus, breadcrumb to Angie before 10am...</div>
-        <div class="note-date">Today</div>
+    <div class="keep-grid" id="keep-grid">
+      <div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px;">
+        Loading notes...
       </div>
-      <div class="note-card" style="background:rgba(168,85,247,0.05);border-color:rgba(168,85,247,0.12);">
-        <div class="note-title" style="color:var(--purple);">Intimacy Container</div>
-        <div class="note-preview">Wednesday + Sunday. 20 min. No phones. Start with physical proximity...</div>
-        <div class="note-date">2d ago</div>
-      </div>
-      <div class="note-card" style="background:rgba(245,158,11,0.05);border-color:rgba(245,158,11,0.12);">
-        <div class="note-title" style="color:var(--gold);">Costa Rica Visa</div>
-        <div class="note-preview">Rentista visa — $2,500/mo passive income requirement. Pensionado option...</div>
-        <div class="note-date">3d ago</div>
-      </div>
-      <div class="note-card" style="background:rgba(16,185,129,0.05);border-color:rgba(16,185,129,0.12);">
-        <div class="note-title" style="color:#10b981;">Decoded Together</div>
-        <div class="note-preview">Ep 1: "The day we almost didn't make it". Guest pitch format. Launch...</div>
-        <div class="note-date">Yesterday</div>
-      </div>
-      <div class="note-card"><div class="note-title">RSD Protocol</div><div class="note-preview">1. Name it. 2. Three objective facts. 3. Text Angie one word...</div><div class="note-date">1 week ago</div></div>
-      <div class="note-card"><div class="note-title">Boquete Notes</div><div class="note-preview">3,900ft. Avg 65°F. Strong expat community. Fiber internet confirmed...</div><div class="note-date">4d ago</div></div>
     </div>
-    <div class="keep-fab">+</div>
+    <div class="keep-fab" onclick="loadKeepNotes()" title="Refresh">↻</div>
   </div>
 
   <div class="tab-bar">
@@ -698,6 +679,59 @@ function showSpace(which) {
   document.getElementById('sp-keep').style.display = which === 'keep' ? 'block' : 'none';
   document.getElementById('st-slack').classList.toggle('active', which === 'slack');
   document.getElementById('st-keep').classList.toggle('active', which === 'keep');
+  if (which === 'keep') loadKeepNotes();
+}
+
+const NOISE = new Set(['notes','reminders','edit labels','archive','trash','search','settings','open-source licenses','done','labels']);
+function isKeepNoise(n) {
+  const lines = (n.title + '\n' + n.text).toLowerCase().split('\n').map(s => s.trim()).filter(Boolean);
+  return lines.length === 0 || lines.every(l => NOISE.has(l));
+}
+
+const NOTE_COLORS = [
+  'rgba(6,182,212,0.07)', 'rgba(168,85,247,0.07)',
+  'rgba(245,158,11,0.07)', 'rgba(16,185,129,0.07)',
+  'rgba(239,68,68,0.07)', 'rgba(99,102,241,0.07)'
+];
+const NOTE_BORDER = [
+  'rgba(6,182,212,0.18)', 'rgba(168,85,247,0.18)',
+  'rgba(245,158,11,0.18)', 'rgba(16,185,129,0.18)',
+  'rgba(239,68,68,0.18)', 'rgba(99,102,241,0.18)'
+];
+
+async function loadKeepNotes() {
+  const grid = document.getElementById('keep-grid');
+  grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px;">Syncing...</div>';
+  try {
+    const r = await fetch(`${ZARA_API}/keep/notes`, {
+      headers: { 'Authorization': `Bearer ${ZARA_TOKEN}` }
+    });
+    const data = await r.json();
+    const notes = (data.notes || []).filter(n => !isKeepNoise(n));
+
+    if (notes.length === 0) {
+      grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px;">No notes synced yet.<br>Open keep.google.com to sync.</div>';
+      return;
+    }
+
+    grid.innerHTML = notes.map((n, i) => {
+      const ci = i % NOTE_COLORS.length;
+      const title = n.title ? `<div class="note-title">${n.title}</div>` : '';
+      const preview = (n.text || '').replace(/\n+/g,' ').slice(0, 80);
+      return `<div class="note-card" style="background:${NOTE_COLORS[ci]};border-color:${NOTE_BORDER[ci]};">
+        ${title}
+        <div class="note-preview">${preview}</div>
+      </div>`;
+    }).join('');
+
+    // Show sync time
+    if (data.last_sync) {
+      const t = new Date(data.last_sync).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+      grid.insertAdjacentHTML('afterend', `<div style="text-align:center;font-size:10px;color:var(--text-muted);padding:6px 0 72px;">synced ${t} · ${notes.length} notes · open Keep to refresh</div>`);
+    }
+  } catch(e) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px;">Could not load notes.<br>${e.message}</div>`;
+  }
 }
 
 // ══════════════════════════════
